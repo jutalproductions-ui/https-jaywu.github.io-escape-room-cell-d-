@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#090d0b" />
+  <title>KK Research Institute — Cell Access</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(55, 92, 69, 0.14), transparent 34%),
+        linear-gradient(180deg, #111612 0%, #070a08 100%);
+      color: #e8eee9;
+      font-family: "Courier New", Courier, monospace;
+      padding: 24px;
+    }
+    .terminal {
+      width: min(620px, 100%);
+      border: 1px solid #425149;
+      background: rgba(9, 13, 11, 0.96);
+      box-shadow: 0 18px 60px rgba(0,0,0,.55);
+      padding: 28px 24px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .terminal::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.025) 0,
+        rgba(255,255,255,.025) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+      opacity: .35;
+    }
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 2.2px;
+      color: #89968f;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(25px, 6vw, 38px);
+      letter-spacing: 1.5px;
+      font-weight: 700;
+    }
+    .subtitle {
+      color: #9ca9a1;
+      margin: 12px 0 26px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .code-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin: 18px 0 20px;
+    }
+    .code-box {
+      min-width: 0;
+      width: 100%;
+      aspect-ratio: 0.85;
+      border: 1px solid #627068;
+      background: #111713;
+      color: #f3f6f4;
+      font: 700 clamp(24px, 8vw, 42px) "Courier New", monospace;
+      text-align: center;
+      text-transform: uppercase;
+      outline: none;
+      border-radius: 3px;
+      caret-color: #d9e2dc;
+    }
+    .code-box:focus {
+      border-color: #a8b5ad;
+      box-shadow: 0 0 0 2px rgba(168,181,173,.12);
+    }
+    button {
+      width: 100%;
+      min-height: 52px;
+      border: 1px solid #728178;
+      background: #1b241f;
+      color: #edf3ef;
+      font: 700 15px "Courier New", monospace;
+      letter-spacing: 1.7px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform .08s ease, background .15s ease;
+    }
+    button:active { transform: translateY(1px); }
+    button:hover { background: #222e27; }
+    #status {
+      min-height: 31px;
+      margin-top: 20px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      font-weight: 700;
+      font-size: clamp(19px, 5vw, 27px);
+      letter-spacing: 2px;
+    }
+    .success { color: #76e09c; text-shadow: 0 0 16px rgba(118,224,156,.2); }
+    .error { color: #ff7979; }
+    .footer {
+      margin-top: 18px;
+      border-top: 1px solid #252f29;
+      padding-top: 13px;
+      font-size: 10px;
+      letter-spacing: 1.3px;
+      color: #657169;
+      text-align: center;
+    }
+    .shake { animation: shake .28s linear; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    @media (max-width: 480px) {
+      body { padding: 14px; }
+      .terminal { padding: 23px 16px 20px; }
+      .code-row { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="terminal" id="terminal">
+    <div class="eyebrow">KK Research Institute / Restricted System</div>
+    <h1>CELL ACCESS</h1>
+    <div class="subtitle">
+      ENTER 6-CHARACTER SECURITY CODE<br>
+      ACCESS ATTEMPT WILL BE VERIFIED
+    </div>
+
+    <div class="code-row">
+      <input class="code-box" maxlength="1" inputmode="text" autocomplete="off" aria-label="Code character 1">
+      <input class="code-box" maxlength="1" inputmode="text" autocomplete="off" aria-label="Code character 2">
+      <input class="code-box" maxlength="1" inputmode="text" autocomplete="off" aria-label="Code character 3">
+      <input class="code-box" maxlength="1" inputmode="text" autocomplete="off" aria-label="Code character 4">
+      <input class="code-box" maxlength="1" inputmode="text" autocomplete="off" aria-label="Code character 5">
+      <input class="code-box" maxlength="1" inputmode="text" autocomplete="off" aria-label="Code character 6">
+    </div>
+
+    <button id="submitBtn" type="button">VERIFY PASSWORD</button>
+    <div id="status" aria-live="polite"></div>
+    <div class="footer">SECURITY NODE // CELL CONTROL SYSTEM</div>
+  </main>
+
+  <script>
+    const CORRECT_CODE = "KX2D16";
+    const boxes = [...document.querySelectorAll(".code-box")];
+    const status = document.getElementById("status");
+    const terminal = document.getElementById("terminal");
+    const submitBtn = document.getElementById("submitBtn");
+
+    function getCode() {
+      return boxes.map(box => box.value.toUpperCase()).join("");
+    }
+
+    function clearStatus() {
+      status.textContent = "";
+      status.className = "";
+    }
+
+    boxes.forEach((box, index) => {
+      box.addEventListener("input", () => {
+        clearStatus();
+        box.value = box.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(-1);
+        if (box.value && index < boxes.length - 1) boxes[index + 1].focus();
+      });
+
+      box.addEventListener("keydown", (e) => {
+        if (e.key === "Backspace" && !box.value && index > 0) boxes[index - 1].focus();
+        if (e.key === "Enter") verifyCode();
+      });
+
+      box.addEventListener("paste", (e) => {
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData)
+          .getData("text")
+          .replace(/[^a-zA-Z0-9]/g, "")
+          .toUpperCase()
+          .slice(0, 6);
+
+        [...text].forEach((char, i) => {
+          if (boxes[index + i]) boxes[index + i].value = char;
+        });
+
+        boxes[Math.min(index + text.length, boxes.length - 1)].focus();
+      });
+    });
+
+    function verifyCode() {
+      if (getCode() === CORRECT_CODE) {
+        status.textContent = "CELL UNLOCKED";
+        status.className = "success";
+        boxes.forEach(box => {
+          box.disabled = true;
+          box.style.borderColor = "#76e09c";
+        });
+        submitBtn.disabled = true;
+        submitBtn.textContent = "ACCESS GRANTED";
+      } else {
+        status.textContent = "WRONG PASSWORD";
+        status.className = "error";
+        terminal.classList.remove("shake");
+        void terminal.offsetWidth;
+        terminal.classList.add("shake");
+
+        setTimeout(() => {
+          boxes.forEach(box => box.value = "");
+          boxes[0].focus();
+        }, 550);
+      }
+    }
+
+    submitBtn.addEventListener("click", verifyCode);
+    boxes[0].focus();
+  </script>
+</body>
+</html>
